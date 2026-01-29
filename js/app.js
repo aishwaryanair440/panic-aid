@@ -1,7 +1,7 @@
 /**
- * CARE-AID REAL-TIME INTELLIGENCE
+ * CARE-AID REAL-TIME INTELLIGENCE & VISUAL LAYER
  * Powered by TensorFlow.js (YAMNet)
- * Edge AI: Privacy-First, Client-Side Only.
+ * Features: Real-time Audio AI & Canvas-based Spatial Analysis
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* =========================================
-   LOGIN LOGIC (Unchanged)
+   LOGIN LOGIC
    ========================================= */
 function initLogin() {
     const form = document.getElementById('loginForm');
@@ -44,8 +44,8 @@ async function initRealTimeMonitor() {
     let audioContext;
     let microphone;
     let isListening = false;
-    let distressLevel = 5; // Base level
-    const signals = []; // Log for UI
+    let distressLevel = 5;
+    let currentMode = 'Motion'; // Default mode
 
     // -- UI ELEMENTS --
     const overlay = document.getElementById('audioOverlay');
@@ -56,9 +56,17 @@ async function initRealTimeMonitor() {
     const dispatchBtn = document.getElementById('dispatchBtn');
     const statusText = document.querySelector('.status-overlay h4');
     const statusSub = document.querySelector('.status-overlay p');
+    const canvas = document.getElementById('spatialCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // -- CLASS MAPPINGS (YAMNet has 521 classes) --
-    // We filter for distinct "Emergency" sounds.
+    // -- SPATIAL LAYER BUTTONS --
+    const modeButtons = {
+        'Thermal': document.getElementById('modeThermal'),
+        'Motion': document.getElementById('modeMotion'),
+        'Density': document.getElementById('modeDensity')
+    };
+
+    // -- CLASS MAPPINGS (YAMNet) --
     const DANGER_CLASSES = {
         'Gunshot, gunfire': { label: 'GUNSHOT DETECTED', severity: 'critical', boost: 40 },
         'Explosion': { label: 'EXPLOSION DETECTED', severity: 'critical', boost: 40 },
@@ -66,13 +74,9 @@ async function initRealTimeMonitor() {
         'Yell': { label: 'AGGRESSIVE VOCALIZATION', severity: 'medium', boost: 10 },
         'Civil defense siren': { label: 'SIREN (CIVIL DEFENSE)', severity: 'medium', boost: 15 },
         'Police car (siren)': { label: 'SIREN (POLICE)', severity: 'medium', boost: 15 },
-        'Ambulance (siren)': { label: 'SIREN (MEDICAL)', severity: 'medium', boost: 10 },
         'Glass': { label: 'BREAKING GLASS', severity: 'high', boost: 25 },
-        'Shatter': { label: 'SHATTERING SOUND', severity: 'high', boost: 25 },
-        'Crying, sobbing': { label: 'HUMAN DISTRESS (CRYING)', severity: 'medium', boost: 8 },
         'Fire alarm': { label: 'ALARM (FIRE)', severity: 'high', boost: 20 },
-        'Smoke detector, smoke alarm': { label: 'ALARM (SMOKE)', severity: 'high', boost: 20 },
-        'Dog': { label: 'CANINE BARKING', severity: 'low', boost: 2 } // Keep low for realism
+        'Smoke detector, smoke alarm': { label: 'ALARM (SMOKE)', severity: 'high', boost: 20 }
     };
 
     // -- INITIALIZATION --
@@ -81,25 +85,17 @@ async function initRealTimeMonitor() {
         startBtn.disabled = true;
 
         try {
-            // 1. Load Model
             console.log("Loading YAMNet...");
             model = await yamnet.load();
-            console.log("Model Loaded.");
 
-            // 2. Access Mic
-            const constraints = { audio: true, video: false };
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-            // 3. Setup Audio Context (16kHz required by YAMNet)
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
             microphone = audioContext.createMediaStreamSource(stream);
 
-            // 4. Start Inference Loop
             isListening = true;
-            processAudio(microphone);
+            processAudio();
+            initVisualizer();
 
-            // 5. Hide Overlay
-            overlay.classList.add('fade-out'); // Add CSS transition later
             overlay.style.display = 'none';
             statusText.innerText = "ACTIVE LISTENING";
             statusSub.innerHTML = '<span class="text-teal">● Live Microphone Feed</span> | Edge Inference: ENABLED';
@@ -107,132 +103,192 @@ async function initRealTimeMonitor() {
         } catch (err) {
             console.error(err);
             startBtn.innerText = "ACCESS DENIED / ERROR";
-            alert("Microphone access is required for real-time analysis (" + err.message + ")");
+            alert("Microphone & Secure Context required.");
         }
     });
 
-    // -- INFERENCE CORE --
-    async function processAudio(source) {
-        // YAMNet expects chunks of audio. We use a ScriptProcessor (deprecated but simple) 
-        // or ensure we pull data compatible with the model's listen() method if available.
-        // The TFJS YAMNet 'listen' method handles windowing automatically.
-
-        console.log("Starting listening loop...");
-
-        // Using the high-level API which abstracts the frame management
-        // probabilityThreshold: Only fire if confident
+    // -- AUDIO INFERENCE --
+    async function processAudio() {
         model.listen(result => {
             const scores = result.scores;
-            // 'scores' is an array of probabilities corresponding to class labels
-            // Get top predictions
             const topK = getTopK(scores, 3);
 
             topK.forEach(match => {
-                const className = match.label;
-                const confidence = match.score;
-
-                // Threshold check (0.3 = 30% confidence)
-                if (confidence > 0.3) {
-                    handleDetection(className, confidence);
+                if (match.score > 0.3) {
+                    handleDetection(match.label, match.score);
                 }
             });
 
-            // Decay distress over time naturally if quiet
-            if (distressLevel > 5) distressLevel -= 0.2;
+            if (distressLevel > 5) distressLevel -= 0.15;
             updateDashboard();
 
         }, {
             includeSpectrogram: false,
-            overlapFactor: 0.5, // 50% overlap for continuous detection
-            probabilityThreshold: 0.1 // Low threshold to catch raw data, we filter manually
+            overlapFactor: 0.5,
+            probabilityThreshold: 0.1
         });
     }
 
     function getTopK(scores, k) {
         const scoresArr = Array.from(scores).map((s, i) => ({ score: s, index: i }));
         scoresArr.sort((a, b) => b.score - a.score);
-        const top = scoresArr.slice(0, k);
-        // Map index to label using the model's class map
-        const classNames = model.classNames; // YAMNet exposes this
-        return top.map(item => ({ label: classNames[item.index], score: item.score }));
+        return scoresArr.slice(0, k).map(item => ({ label: model.classNames[item.index], score: item.score }));
     }
 
-    // -- LOGIC & UI UPDATES --
-    // Debounce to prevent feed flooding
-    let lastDetectionTime = 0;
+    // -- VISUALIZER (SPATIAL LAYERS) --
+    const entities = [];
+    function initVisualizer() {
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
+        // Generate mock entities for spatial visualization
+        for (let i = 0; i < 15; i++) {
+            entities.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                size: 5 + Math.random() * 15,
+                heat: Math.random(),
+                id: i
+            });
+        }
+
+        requestAnimationFrame(renderLoop);
+    }
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    function renderLoop() {
+        if (!isListening) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update entities
+        entities.forEach(e => {
+            e.x += e.vx;
+            e.y += e.vy;
+            if (e.x < 0 || e.x > canvas.width) e.vx *= -1;
+            if (e.y < 0 || e.y > canvas.height) e.vy *= -1;
+
+            // Render based on mode
+            if (currentMode === 'Thermal') {
+                renderThermal(e);
+            } else if (currentMode === 'Density') {
+                renderDensity(e);
+            } else {
+                renderMotion(e);
+            }
+        });
+
+        requestAnimationFrame(renderLoop);
+    }
+
+    function renderThermal(e) {
+        ctx.save();
+        const gradient = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.size * 3);
+        gradient.addColorStop(0, `rgba(255, ${Math.floor(255 * (1 - e.heat))}, 0, 0.6)`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.globalCompositeOperation = 'screen';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function renderMotion(e) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Direction indicator
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y);
+        ctx.lineTo(e.x + e.vx * 10, e.y + e.vy * 10);
+        ctx.stroke();
+    }
+
+    function renderDensity(e) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(45, 212, 191, 0.2)';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size * 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight clusters (simulated)
+        if (e.id % 3 === 0) {
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.size * 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // -- MODE SWITCHING --
+    Object.keys(modeButtons).forEach(mode => {
+        modeButtons[mode].addEventListener('click', () => {
+            currentMode = mode;
+            // Update button styles
+            Object.values(modeButtons).forEach(b => b.classList.remove('active'));
+            modeButtons[mode].classList.add('active');
+        });
+    });
+
+    // -- LOGIC & UI --
+    let lastDetectionTime = 0;
     function handleDetection(className, confidence) {
         const now = Date.now();
         const mapped = DANGER_CLASSES[className];
-
-        // Only care about mapped danger classes
-        if (!mapped) return;
-
-        // Debounce same signal (don't show "Siren" 50 times a second)
-        if (now - lastDetectionTime < 1500) return;
+        if (!mapped || now - lastDetectionTime < 1500) return;
 
         lastDetectionTime = now;
-
-        // Boost Distress Meter
-        const boost = mapped.boost * (confidence * 2); // Confidence weighs the boost
-        distressLevel = Math.min(distressLevel + boost, 100);
-
-        // Log to Feed
-        const timeString = new Date().toLocaleTimeString('en-US', { hour12: false });
+        distressLevel = Math.min(distressLevel + mapped.boost * (confidence * 2), 100);
 
         const card = document.createElement('div');
-        let borderClass = 'normal';
-        let badgeClass = 'text-accent';
-
-        if (mapped.severity === 'medium') { borderClass = 'concern'; badgeClass = 'text-warning'; }
-        if (mapped.severity === 'critical' || mapped.severity === 'high') { borderClass = 'critical'; badgeClass = 'text-danger'; }
-
-        card.className = `signal-card ${borderClass}`;
+        const badgeClass = (mapped.severity === 'medium') ? 'text-warning' : 'text-danger';
+        card.className = `signal-card ${(mapped.severity === 'medium') ? 'concern' : 'critical'}`;
         card.innerHTML = `
             <div class="d-flex justify-content-between mb-1">
                 <span class="badge bg-dark border border-secondary ${badgeClass}">${mapped.label}</span>
-                <span class="font-monospace small text-muted">${timeString}</span>
+                <span class="font-monospace small text-muted">${new Date().toLocaleTimeString('en-US', { hour12: false })}</span>
             </div>
             <div class="d-flex justify-content-between align-items-end">
-                <p class="mb-0 small text-light opacity-75">Raw Class: ${className}</p>
-                <small class="text-muted font-monospace">${Math.round(confidence * 100)}% Conf.</small>
+                <p class="mb-0 small text-light opacity-75">${className}</p>
+                <small class="text-muted font-monospace">${Math.round(confidence * 100)}%</small>
             </div>
         `;
 
-        // Clear empty state
-        const empty = document.querySelector('.empty-state');
-        if (empty) empty.remove();
-
+        if (document.querySelector('.empty-state')) document.querySelector('.empty-state').remove();
         signalFeed.prepend(card);
-        // Prune list
         if (signalFeed.children.length > 20) signalFeed.lastChild.remove();
     }
 
     function updateDashboard() {
-        // Clamp distress
         if (distressLevel < 0) distressLevel = 0;
-        const displayLevel = Math.round(distressLevel);
+        const display = Math.round(distressLevel);
+        distressValue.innerText = `${display}%`;
+        distressCircle.style.setProperty('--percent', `${display}%`);
 
-        distressValue.innerText = `${displayLevel}%`;
-        distressCircle.style.setProperty('--percent', `${displayLevel}%`);
-
-        // Color Logic
         let color = 'var(--accent-teal)';
-        if (displayLevel > 30) color = 'var(--accent-primary)';
-        if (displayLevel > 50) color = 'var(--accent-warning)';
-        if (displayLevel > 80) color = 'var(--accent-danger)';
+        if (display > 30) color = 'var(--accent-primary)';
+        if (display > 50) color = 'var(--accent-warning)';
+        if (display > 80) color = 'var(--accent-danger)';
+        distressCircle.style.background = `conic-gradient(${color} 0% ${display}%, var(--bg-surface) ${display}% 100%)`;
 
-        distressCircle.style.background = `conic-gradient(${color} 0% ${displayLevel}%, var(--bg-surface) ${displayLevel}% 100%)`;
-
-        // Trend
         const trend = document.getElementById('trendIndicator');
-        if (displayLevel > 50) trend.innerHTML = '<span class="text-warning">▲ RISING</span>';
-        else trend.innerHTML = '<span class="text-teal">▼ STABLE</span>';
+        trend.innerHTML = (display > 50) ? '<span class="text-warning">▲ RISING</span>' : '<span class="text-teal">▼ STABLE</span>';
 
-        // Dispatch
-        if (displayLevel >= 75) {
+        if (display >= 75) {
             dispatchBtn.disabled = false;
-            dispatchBtn.classList.remove('btn-danger', 'disabled');
+            dispatchBtn.classList.remove('disabled');
             dispatchBtn.innerHTML = "⚠️ HUMAN REVIEW REQUIRED";
         }
     }

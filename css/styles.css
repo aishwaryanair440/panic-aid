@@ -3,15 +3,19 @@
  * Theme: Infrastructure, Restraint, Clarity
  */
 
- :root {
+:root {
     --bg-dark: #0f172a;
     --bg-surface: #1e293b;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --accent-primary: #38bdf8; /* Sky Blue */
-    --accent-teal: #2dd4bf;    /* Safety / Calm */
-    --accent-warning: #f59e0b; /* Amber */
-    --accent-danger: #ef4444;  /* Red */
+    --accent-primary: #38bdf8;
+    /* Sky Blue */
+    --accent-teal: #2dd4bf;
+    /* Safety / Calm */
+    --accent-warning: #f59e0b;
+    /* Amber */
+    --accent-danger: #ef4444;
+    /* Red */
     --border-color: #334155;
     --glass-bg: rgba(30, 41, 59, 0.7);
 }
@@ -24,22 +28,43 @@ body {
 }
 
 /* Typography Utilities */
-.tracking-wide { letter-spacing: 0.05em; }
-.letter-spacing-1 { letter-spacing: 0.1em; }
-.letter-spacing-2 { letter-spacing: 0.2em; }
-.font-monospace { font-family: 'JetBrains Mono', monospace; }
-.extra-small { font-size: 0.7rem; }
+.tracking-wide {
+    letter-spacing: 0.05em;
+}
+
+.letter-spacing-1 {
+    letter-spacing: 0.1em;
+}
+
+.letter-spacing-2 {
+    letter-spacing: 0.2em;
+}
+
+.font-monospace {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.extra-small {
+    font-size: 0.7rem;
+}
 
 /* Custom Colors */
-.text-teal { color: var(--accent-teal) !important; }
-.text-accent { color: var(--accent-primary) !important; }
+.text-teal {
+    color: var(--accent-teal) !important;
+}
+
+.text-accent {
+    color: var(--accent-primary) !important;
+}
+
 .bg-glass {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
+
 .bg-grid {
-    background-image: 
+    background-image:
         linear-gradient(var(--border-color) 1px, transparent 1px),
         linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
     background-size: 40px 40px;
@@ -48,19 +73,47 @@ body {
 
 /* Animations */
 @keyframes pulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(45, 212, 191, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(45, 212, 191, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(45, 212, 191, 0);
+    }
 }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translate3d(0, 20px, 0); }
-    to { opacity: 1; transform: translate3d(0, 0, 0); }
+    from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
 }
 
-.fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
-.delay-1 { animation-delay: 0.2s; opacity: 0; }
-.delay-2 { animation-delay: 0.4s; opacity: 0; }
+.fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.delay-1 {
+    animation-delay: 0.2s;
+    opacity: 0;
+}
+
+.delay-2 {
+    animation-delay: 0.4s;
+    opacity: 0;
+}
 
 .pulse-ring {
     width: 60px;
@@ -86,32 +139,45 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
     color: white;
 }
+
 .btn-accent {
     background-color: var(--accent-primary);
     color: var(--bg-dark);
     border: none;
     transition: all 0.3s ease;
 }
+
 .btn-accent:hover {
     background-color: #7dd3fc;
     transform: translateY(-1px);
 }
 
 /* Monitoring Page Specifics */
-.h-screen-calc { height: calc(100vh - 57px); } /* Navbar height approx 57px */
-
-.zone {
-    border: 1px dashed var(--text-muted);
-    border-radius: 50%;
-    position: absolute;
-    opacity: 0.3;
-    transition: all 1s ease;
+.h-screen-calc {
+    height: calc(100vh - 57px);
 }
-.zone.active-zone {
-    border-color: var(--accent-warning);
-    background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
-    opacity: 1;
-    animation: pulse 3s infinite;
+
+/* Navbar height approx 57px */
+
+.z-1 {
+    z-index: 1;
+}
+
+.z-2 {
+    z-index: 2;
+}
+
+#spatialCanvas {
+    opacity: 0.8;
+}
+
+.simulation-viewport {
+    background-color: #020617;
+}
+
+.btn-dark.active {
+    background-color: var(--accent-primary);
+    color: var(--bg-dark);
 }
 
 /* Distress Meter */
@@ -125,10 +191,8 @@ body {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: conic-gradient(
-        var(--accent-warning) 0% var(--percent), 
-        var(--bg-surface) var(--percent) 100%
-    );
+    background: conic-gradient(var(--accent-warning) 0% var(--percent),
+            var(--bg-surface) var(--percent) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -156,9 +220,11 @@ body {
     font-size: 0.9rem;
     animation: fadeInUp 0.5s ease-out;
 }
+
 .signal-card.concern {
     border-left-color: var(--accent-warning);
 }
+
 .signal-card.critical {
     border-left-color: var(--accent-danger);
     background: rgba(239, 68, 68, 0.1);
