@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Care-Aid | Secure Access</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-dark text-light d-flex align-items-center justify-content-center min-vh-100">
+
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                
+                <!-- Logo / Brand -->
+                <div class="text-center mb-5 fade-in-up">
+                    <div class="brand-icon mb-3">
+                        <div class="pulse-ring"></div>
+                    </div>
+                    <h1 class="h3 fw-light tracking-wide">CARE-AID</h1>
+                    <p class="text-muted small text-uppercase letter-spacing-2">Pre-Incident Observation Layer</p>
+                </div>
+
+                <!-- Ethics & Login Card -->
+                <div class="card bg-glass border-0 shadow-lg fade-in-up delay-1">
+                    <div class="card-body p-5">
+                        <h2 class="h5 mb-4 text-accent fw-bold">Operational Commitment</h2>
+                        
+                        <div class="ethics-box mb-4 p-3 border-start border-accent bg-dark-subtle">
+                            <p class="small text-muted mb-2">By accessing this system, you acknowledge:</p>
+                            <ul class="list-unstyled small text-light mb-0">
+                                <li class="mb-1">✓ <span class="opacity-75">No Facial Recognition Retained</span></li>
+                                <li class="mb-1">✓ <span class="opacity-75">No Audio Recording</span></li>
+                                <li class="mb-1">✓ <span class="opacity-75">Analysis is Transient & Pattern-Based</span></li>
+                                <li>✓ <span class="opacity-75">Human Review Required for Intervention</span></li>
+                            </ul>
+                        </div>
+
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="operatorId" class="form-label small text-uppercase text-muted">Operator ID</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-light focus-ring" id="operatorId" placeholder="AID-XXXX" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="accessKey" class="form-label small text-uppercase text-muted">Access Key</label>
+                                <input type="password" class="form-control bg-dark border-secondary text-light focus-ring" id="accessKey" placeholder="••••••••" required>
+                            </div>
+                            
+                            <div class="form-check mb-4">
+                                <input class="form-check-input bg-dark border-secondary" type="checkbox" id="ethicsCheck" required>
+                                <label class="form-check-label small text-muted" for="ethicsCheck">
+                                    I accept the operational ethics & privacy protocols.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-accent w-100 py-2 text-uppercase letter-spacing-1 fw-bold">
+                                Initialize Observation
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 text-muted small fade-in-up delay-2">
+                    System Status: <span class="text-teal">● Nominal</span> | Encryption: <span class="text-teal">AES-256</span>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
